@@ -9,3 +9,7 @@ I want to build this platform because currently, switching filament kind of suck
 - A user should be able to create several profiles for that filament.
 - The profiles should be as portable as possible (e.g. easy to import into major slicers - Bambu Studio, OrcaSlicer, PrusaSlicer, Cura, &c). 
 - A user should be able to switch filaments on a printer, and have the printer automatically contact the slicer to change the filament setting for a given printer - this may require a change where slicers have to be aware of the filament currently loaded in any given printer. This way, a user can hit print, and all of the filament specific settings will automatically be changed over as needed. 
+
+# Additional Notes:
+- In addition to RFID, it would be great to create a QR Code generator that contains all of the relevant info for a given filament. This could be printed on the side of a spool of filament and scanned by a computer, the printer itself (if it has a camera) or a cell phone. 
+- The filament should also have volumetric flow rate settings - but, the flow rate should depend on the hotend, nozzle, and print temperature (and possibly the extruder used) for the print profile, as these are the things that will determine what level of volumetric flow is possible. 
