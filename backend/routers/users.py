@@ -3,6 +3,8 @@ from pydantic import BaseModel, EmailStr, constr
 from typing import List, Optional
 from passlib.context import CryptContext
 from datetime import datetime
+from jose import JWTError, jwt
+from datetime import datetime, timedelta
 
 router = APIRouter(
     prefix="/users",
@@ -11,6 +13,11 @@ router = APIRouter(
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# JWT settings
+SECRET_KEY = "your-secret-key-here"  # Change this in production
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # Pydantic model for user data validation
 class UserBase(BaseModel):
@@ -49,6 +56,26 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
+
+def get_user_by_email(email: str) -> Optional[User]:
+    for user in users.values():
+        if user.email == email:
+            return user
+    return None
+
+def create_access_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def add_user(user: User) -> User:
+    global current_id
+    user.id = current_id
+    users[current_id] = user
+    current_id += 1
+    return user
 
 @router.post("/", response_model=UserResponse)
 async def create_user(user: UserCreate):

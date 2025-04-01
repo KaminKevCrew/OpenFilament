@@ -1,91 +1,46 @@
-from material import Material
+from pydantic import BaseModel, Field
+from .material import Material
 
-class Filament:
-    def __init__(self, name: str, brand: str, color: str, material: Material, diameter: float, price: float):
-        self._name = name
-        self._brand = brand
-        self._color = color
-        self._material = material
-        self._diameter = diameter
-        self._price = price
+class Filament(BaseModel):
+    name: str
+    brand: str
+    color: str
+    material: Material
+    diameter: float = Field(gt=0)
+    price: float = Field(ge=0)
 
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @name.setter
-    def name(self, value: str):
-        self._name = value
-
-    @property
-    def brand(self) -> str:
-        return self._brand
-
-    @brand.setter
-    def brand(self, value: str):
-        self._brand = value
-
-    @property
-    def color(self) -> str:
-        return self._color
-
-    @color.setter
-    def color(self, value: str):
-        self._color = value
-
-    @property
-    def material(self) -> Material:
-        return self._material
-
-    @material.setter
-    def material(self, value: Material):
-        self._material = value
-
-    @property
-    def diameter(self) -> float:
-        return self._diameter
-
-    @diameter.setter
-    def diameter(self, value: float):
-        self._diameter = value
-
-    @property
-    def price(self) -> float:
-        return self._price
-
-    @price.setter
-    def price(self, value: float):
-        self._price = value
+    class Config:
+        from_attributes = True
 
     # Delegate Material properties to the material object
     @property
     def material_name(self) -> str:
-        return self._material.name
+        return self.material.name
 
     @property
     def density(self) -> float:
-        return self._material.density
+        return self.material.density
 
     @property
     def softening_temp(self) -> float:
-        return self._material.softening_temp
+        return self.material.softening_temp
 
     @property
     def idle_temp(self) -> float:
-        return self._material.idle_temp
+        return self.material.idle_temp
 
     @property
     def min_temp(self) -> float:
-        return self._material.min_temp
+        return self.material.min_temp
 
     @property
     def max_temp(self) -> float:
-        return self._material.max_temp
+        return self.material.max_temp
 
     @property
     def shrinkage(self) -> float:
-        return self._material.shrinkage
+        return self.material.shrinkage
 
     @property
     def extrusion_ratio(self) -> float:
-        return self._material.extrusion_ratio
+        return self.material.extrusion_ratio

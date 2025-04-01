@@ -1,16 +1,19 @@
-from filament import Filament
+from pydantic import BaseModel, Field
+from .filament import Filament
 
 class Spool(Filament):
-    def __init__(self, spool_id: int, starting_weight: float, starting_length: float):
-        self._spool_id = spool_id
-        self._starting_weight = starting_weight
-        self._starting_length = starting_length
-        self._current_weight = starting_weight
-        self._current_length = starting_length
-        
+    spool_id: int
+    starting_weight: float = Field(gt=0)
+    starting_length: float = Field(gt=0)
+    current_weight: float = Field(gt=0)
+    current_length: float = Field(gt=0)
+
+    class Config:
+        from_attributes = True
+
     def use_spool(self, length: float):
         self.current_length = self.current_length - length
-        self.current_weight = self.current_weight - (length * self.filament.density)
+        self.current_weight = self.current_weight - (length * self.material.density)
 
     @property
     def spool_id(self) -> int:
