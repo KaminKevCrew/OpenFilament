@@ -12,37 +12,8 @@ import {
 } from '@/components/ui/table';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
-
-interface Material {
-  id: number;
-  name: string;
-  density: number;
-  softening_temp: number;
-  idle_temp: number;
-  min_temp: number;
-  max_temp: number;
-  shrinkage: number;
-  extrusion_ratio: number;
-}
-
-interface Filament {
-  id: number;
-  name: string;
-  brand: string;
-  color: string;
-  material: Material;
-  diameter: number;
-  price: number;
-}
-
-interface Spool {
-  id: number;
-  filament: Filament;
-  starting_weight: number;
-  starting_length: number;
-  current_weight: number;
-  current_length: number;
-}
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/components';
+import { api, Spool } from '@/lib/api';
 
 export default function SpoolsPage() {
   const [spools, setSpools] = useState<Spool[]>([]);
@@ -52,11 +23,7 @@ export default function SpoolsPage() {
   useEffect(() => {
     const fetchSpools = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/spools');
-        if (!response.ok) {
-          throw new Error('Failed to fetch spools');
-        }
-        const data = await response.json();
+        const data = await api.getSpools();
         setSpools(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -71,16 +38,22 @@ export default function SpoolsPage() {
   if (loading) {
     return (
       <div className="container py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Spools</h1>
-          <Button asChild>
-            <Link href="/spools/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Spool
-            </Link>
-          </Button>
-        </div>
-        <div className="text-center py-8">Loading spools...</div>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Spools</CardTitle>
+              <Button asChild>
+                <Link href="/spools/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Spool
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">Loading spools...</div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -88,67 +61,73 @@ export default function SpoolsPage() {
   if (error) {
     return (
       <div className="container py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Spools</h1>
-          <Button asChild>
-            <Link href="/spools/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Spool
-            </Link>
-          </Button>
-        </div>
-        <div className="text-center py-8 text-destructive">{error}</div>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Spools</CardTitle>
+              <Button asChild>
+                <Link href="/spools/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Spool
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8 text-destructive">{error}</div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="container py-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Spools</h1>
-        <Button asChild>
-          <Link href="/spools/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Spool
-          </Link>
-        </Button>
-      </div>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Filament</TableHead>
-              <TableHead>Starting Weight (g)</TableHead>
-              <TableHead>Starting Length (m)</TableHead>
-              <TableHead>Current Weight (g)</TableHead>
-              <TableHead>Current Length (m)</TableHead>
-              <TableHead>Remaining (%)</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {spools.map((spool) => (
-              <TableRow key={spool.id}>
-                <TableCell className="font-medium">
-                  {spool.filament.name} ({spool.filament.brand} - {spool.filament.color})
-                </TableCell>
-                <TableCell>{spool.starting_weight.toFixed(1)}</TableCell>
-                <TableCell>{spool.starting_length.toFixed(1)}</TableCell>
-                <TableCell>{spool.current_weight.toFixed(1)}</TableCell>
-                <TableCell>{spool.current_length.toFixed(1)}</TableCell>
-                <TableCell>
-                  {((spool.current_length / spool.starting_length) * 100).toFixed(1)}%
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" asChild>
-                    <Link href={`/spools/${spool.id}`}>Edit</Link>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Spools</CardTitle>
+            <Button asChild>
+              <Link href="/spools/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Spool
+              </Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Filament</TableHead>
+                  <TableHead>Brand</TableHead>
+                  <TableHead>Color</TableHead>
+                  <TableHead>Material</TableHead>
+                  <TableHead>Starting Weight (g)</TableHead>
+                  <TableHead>Current Weight (g)</TableHead>
+                  <TableHead>Starting Length (m)</TableHead>
+                  <TableHead>Current Length (m)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {spools.map((spool) => (
+                  <TableRow key={spool.id}>
+                    <TableCell>{spool.filament.name}</TableCell>
+                    <TableCell>{spool.filament.brand}</TableCell>
+                    <TableCell>{spool.filament.color}</TableCell>
+                    <TableCell>{spool.filament.material.name}</TableCell>
+                    <TableCell>{spool.starting_weight}</TableCell>
+                    <TableCell>{spool.current_weight}</TableCell>
+                    <TableCell>{spool.starting_length}</TableCell>
+                    <TableCell>{spool.current_length}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 } 

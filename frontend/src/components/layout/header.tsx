@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button"
-import { auth } from '@/lib/auth';
+import { auth } from '@/services/api';
 import { useAuth } from '@/lib/auth-context';
 
 export function Header() {
@@ -11,7 +11,7 @@ export function Header() {
   const { isAuthenticated, setIsAuthenticated } = useAuth();
 
   const handleSignOut = () => {
-    auth.removeToken();
+    auth.logout();
     setIsAuthenticated(false);
     router.push('/auth/signin');
   };

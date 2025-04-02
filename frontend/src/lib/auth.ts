@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:8000';
+import Cookies from 'js-cookie';
 
 export interface User {
   id: number;
@@ -24,7 +24,7 @@ export interface SignInData {
 
 export const auth = {
   async signUp(data: SignUpData): Promise<User> {
-    const response = await fetch(`${API_URL}/auth/signup`, {
+    const response = await fetch('/auth/signup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -41,7 +41,7 @@ export const auth = {
   },
 
   async signIn(data: SignInData): Promise<AuthResponse> {
-    const response = await fetch(`${API_URL}/auth/login`, {
+    const response = await fetch('/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -58,33 +58,45 @@ export const auth = {
   },
 
   async getCurrentUser(): Promise<User> {
-    const token = localStorage.getItem('token');
+    const response = await this.authenticatedRequest('/api/users/me');
+    return response.json();
+  },
+
+  setToken(token: string) {
+    Cookies.set('token', token, { expires: 7 }); // Token expires in 7 days
+  },
+
+  removeToken() {
+    Cookies.remove('token');
+  },
+
+  isAuthenticated(): boolean {
+    return !!Cookies.get('token');
+  },
+
+  async authenticatedRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
+    const token = Cookies.get('token');
     if (!token) {
       throw new Error('No token found');
     }
 
-    const response = await fetch(`${API_URL}/api/users/me`, {
+    const response = await fetch(endpoint, {
+      ...options,
       headers: {
+        ...options.headers,
         'Authorization': `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to get current user');
+      if (response.status === 401) {
+        this.removeToken();
+        throw new Error('Authentication failed');
+      }
+      const error = await response.json();
+      throw new Error(error.detail || 'Request failed');
     }
 
-    return response.json();
-  },
-
-  setToken(token: string) {
-    localStorage.setItem('token', token);
-  },
-
-  removeToken() {
-    localStorage.removeItem('token');
-  },
-
-  isAuthenticated(): boolean {
-    return !!localStorage.getItem('token');
+    return response;
   },
 }; 
