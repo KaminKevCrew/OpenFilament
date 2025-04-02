@@ -13,3 +13,8 @@ I want to build this platform because currently, switching filament kind of suck
 # Additional Notes:
 - In addition to RFID, it would be great to create a QR Code generator that contains all of the relevant info for a given filament. This could be printed on the side of a spool of filament and scanned by a computer, the printer itself (if it has a camera) or a cell phone. 
 - The filament should also have volumetric flow rate settings - but, the flow rate should depend on the hotend, nozzle, and print temperature (and possibly the extruder used) for the print profile, as these are the things that will determine what level of volumetric flow is possible. 
+
+
+## To Run:
+- Development: `docker compose up --build`
+- Production: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build`
