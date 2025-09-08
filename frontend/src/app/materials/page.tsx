@@ -1,133 +1,102 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Plus } from 'lucide-react';
-import Link from 'next/link';
+import { materials } from '@/services/api';
+import { AddMaterialModal } from '@/components/materials/add-material-modal';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/components';
-import { api, Material } from '@/lib/api';
+import type { Material } from '@/services/api';
+import { useAuth } from '@/lib/auth-context';
+import { useRouter } from 'next/navigation';
 
 export default function MaterialsPage() {
-  const [materials, setMaterials] = useState<Material[]>([]);
+  const [materialsList, setMaterialsList] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated, isLoading, logout } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchMaterials = async () => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/auth/signin');
+      return;
+    }
+
+    async function fetchMaterials() {
+      if (!isAuthenticated) return;
+
       try {
-        const data = await api.getMaterials();
-        setMaterials(data);
+        const response = await materials.getAll();
+        setMaterialsList(response);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        if (err instanceof Error && err.message.includes('401')) {
+          logout();
+        } else {
+          setError(err instanceof Error ? err.message : 'Failed to fetch materials');
+        }
       } finally {
         setLoading(false);
       }
-    };
+    }
 
-    fetchMaterials();
-  }, []);
+    if (isAuthenticated) {
+      fetchMaterials();
+    }
+  }, [isAuthenticated, isLoading, router, logout]);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   if (loading) {
-    return (
-      <div className="container py-8">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Materials</CardTitle>
-              <Button asChild>
-                <Link href="/materials/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Material
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8">Loading materials...</div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <div>Loading materials...</div>;
   }
 
   if (error) {
-    return (
-      <div className="container py-8">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Materials</CardTitle>
-              <Button asChild>
-                <Link href="/materials/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Material
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8 text-destructive">{error}</div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <div>Error: {error}</div>;
   }
 
   return (
-    <div className="container py-8">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Materials</CardTitle>
-            <Button asChild>
-              <Link href="/materials/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Material
-              </Link>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Density (g/cm³)</TableHead>
-                  <TableHead>Softening Temp (°C)</TableHead>
-                  <TableHead>Idle Temp (°C)</TableHead>
-                  <TableHead>Min Temp (°C)</TableHead>
-                  <TableHead>Max Temp (°C)</TableHead>
-                  <TableHead>Shrinkage (%)</TableHead>
-                  <TableHead>Extrusion Ratio</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {materials.map((material) => (
-                  <TableRow key={material.id}>
-                    <TableCell>{material.name}</TableCell>
-                    <TableCell>{material.density}</TableCell>
-                    <TableCell>{material.softening_temp}</TableCell>
-                    <TableCell>{material.idle_temp}</TableCell>
-                    <TableCell>{material.min_temp}</TableCell>
-                    <TableCell>{material.max_temp}</TableCell>
-                    <TableCell>{material.shrinkage}</TableCell>
-                    <TableCell>{material.extrusion_ratio}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="container mx-auto py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Materials</h1>
+        <AddMaterialModal />
+      </div>
+      <div className="grid gap-4">
+        {materialsList.map((material) => (
+          <Card key={material.id}>
+            <CardHeader>
+              <CardTitle>{material.name}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">{material.description}</p>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-medium">Density:</span> {material.density} g/cm³
+                </div>
+                <div>
+                  <span className="font-medium">Softening Temperature:</span> {material.softening_temp}°C
+                </div>
+                <div>
+                  <span className="font-medium">Idle Temperature:</span> {material.idle_temp}°C
+                </div>
+                <div>
+                  <span className="font-medium">Temperature Range:</span> {material.min_temp}°C - {material.max_temp}°C
+                </div>
+                <div>
+                  <span className="font-medium">Shrinkage:</span> {material.shrinkage}%
+                </div>
+                <div>
+                  <span className="font-medium">Extrusion Ratio:</span> {material.extrusion_ratio}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 } 

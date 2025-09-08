@@ -1,17 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { auth } from '@/services/api';
 import { useAuth } from '@/lib/auth-context';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/components';
 import { Input, Label } from '@/components/ui/components';
 
 export default function SignUp() {
-  const router = useRouter();
-  const { setIsAuthenticated } = useAuth();
+  const { register } = useAuth();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -26,12 +23,9 @@ export default function SignUp() {
     const password = formData.get('password') as string;
 
     try {
-      await auth.register(username, email, password);
-      setIsAuthenticated(true);
-      router.push('/');
+      await register(username, email, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign up');
-      setIsAuthenticated(false);
     } finally {
       setLoading(false);
     }

@@ -1,17 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { auth } from '@/services/api';
 import { useAuth } from '@/lib/auth-context';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/components';
 import { Input, Label } from '@/components/ui/components';
 
 export default function SignIn() {
-  const router = useRouter();
-  const { setIsAuthenticated } = useAuth();
+  const { login } = useAuth();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -25,12 +22,9 @@ export default function SignIn() {
     const password = formData.get('password') as string;
 
     try {
-      await auth.login(email, password);
-      setIsAuthenticated(true);
-      router.push('/');
+      await login(email, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign in');
-      setIsAuthenticated(false);
     } finally {
       setLoading(false);
     }

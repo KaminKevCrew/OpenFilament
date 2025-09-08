@@ -17,15 +17,33 @@ class UserLogin(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    user: Optional[UserResponse] = None
 
-@router.post("/signup", response_model=UserResponse)
+@router.post("/signup", response_model=Token)
 async def signup(user: UserCreate):
-    # Check if user already exists
-    if get_user_by_email(user.email):
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    # Create new user using the router's create_user function
-    return await create_user(user)
+    try:
+        # Check if user already exists
+        if get_user_by_email(user.email):
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        # Create new user
+        db_user = await create_user(user)
+        
+        # Create access token
+        access_token = create_access_token(data={"sub": db_user.email})
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {
+                "id": db_user.id,
+                "email": db_user.email,
+                "username": db_user.username
+            }
+        }
+    except Exception as e:
+        print(f"Signup error: {str(e)}")  # Log the error
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/login", response_model=Token)
 async def login(user: UserLogin):
@@ -40,4 +58,12 @@ async def login(user: UserLogin):
     
     # Create access token
     access_token = create_access_token(data={"sub": db_user.email})
-    return {"access_token": access_token, "token_type": "bearer"} 
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": db_user.id,
+            "email": db_user.email,
+            "username": db_user.username
+        }
+    } 

@@ -18,7 +18,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # JWT settings
 SECRET_KEY = "your-secret-key-here"  # Change this in production
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 43200  # 30 days in minutes
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -76,12 +76,11 @@ def create_access_token(data: dict) -> str:
 
 def add_user(user: User) -> User:
     global current_id
-    user.id = current_id
     users[current_id] = user
     current_id += 1
     return user
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
+async def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
@@ -94,34 +93,42 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    
+        
     user = get_user_by_email(email)
     if user is None:
         raise credentials_exception
     return user
 
+async def create_user(user: UserCreate) -> User:
+    try:
+        # Hash the password
+        hashed_password = get_password_hash(user.password)
+        
+        # Create new user with all required fields
+        new_user = User(
+            id=current_id,  # Set the ID before creating the user
+            username=user.username,
+            email=user.email,
+            hashed_password=hashed_password,
+            created_at=datetime.utcnow()
+        )
+        
+        # Add user to storage
+        return add_user(new_user)
+    except Exception as e:
+        print(f"User creation error: {str(e)}")  # Log the error
+        raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
+
 @router.post("/", response_model=UserResponse)
-async def create_user(user: UserCreate):
-    global current_id
-    
+async def create_user_route(user: UserCreate):
     # Check if username or email already exists
     if any(u.username == user.username for u in users.values()):
         raise HTTPException(status_code=400, detail="Username already exists")
     if any(u.email == user.email for u in users.values()):
         raise HTTPException(status_code=400, detail="Email already exists")
     
-    # Create new user with hashed password
-    new_user = User(
-        id=current_id,
-        username=user.username,
-        email=user.email,
-        hashed_password=get_password_hash(user.password),
-        created_at=datetime.utcnow()
-    )
-    
-    users[current_id] = new_user
-    current_id += 1
-    return new_user
+    # Create new user
+    return await create_user(user)
 
 @router.get("/", response_model=List[UserResponse])
 async def read_users():

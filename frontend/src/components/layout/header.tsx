@@ -1,20 +1,11 @@
 'use client';
 
 import Link from "next/link"
-import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button"
-import { auth } from '@/services/api';
 import { useAuth } from '@/lib/auth-context';
 
 export function Header() {
-  const router = useRouter();
-  const { isAuthenticated, setIsAuthenticated } = useAuth();
-
-  const handleSignOut = () => {
-    auth.logout();
-    setIsAuthenticated(false);
-    router.push('/auth/signin');
-  };
+  const { isAuthenticated, logout } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -48,7 +39,7 @@ export function Header() {
         </div>
         <div className="flex flex-1 items-center justify-end space-x-4">
           {isAuthenticated ? (
-            <Button variant="ghost" onClick={handleSignOut}>
+            <Button variant="ghost" onClick={logout}>
               Sign out
             </Button>
           ) : (

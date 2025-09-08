@@ -1,141 +1,78 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Plus } from 'lucide-react';
-import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/components';
-import { api, Filament } from '@/lib/api';
-
-interface Material {
-  id: number;
-  name: string;
-  density: number;
-  softening_temp: number;
-  idle_temp: number;
-  min_temp: number;
-  max_temp: number;
-  shrinkage: number;
-  extrusion_ratio: number;
-}
+import { filaments } from '@/services/api';
+import { AddFilamentModal } from '@/components/filaments/add-filament-modal';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import type { Filament } from '@/services/api';
 
 export default function FilamentsPage() {
-  const [filaments, setFilaments] = useState<Filament[]>([]);
+  const [filamentsList, setFilamentsList] = useState<Filament[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchFilaments = async () => {
+    async function fetchFilaments() {
       try {
-        const data = await api.getFilaments();
-        setFilaments(data);
+        const response = await filaments.getAll();
+        setFilamentsList(response);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        setError(err instanceof Error ? err.message : 'Failed to fetch filaments');
       } finally {
         setLoading(false);
       }
-    };
+    }
 
     fetchFilaments();
   }, []);
 
   if (loading) {
-    return (
-      <div className="container py-8">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Filaments</CardTitle>
-              <Button asChild>
-                <Link href="/filaments/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Filament
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8">Loading filaments...</div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
   if (error) {
-    return (
-      <div className="container py-8">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Filaments</CardTitle>
-              <Button asChild>
-                <Link href="/filaments/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Filament
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8 text-destructive">{error}</div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <div>Error: {error}</div>;
   }
 
   return (
-    <div className="container py-8">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Filaments</CardTitle>
-            <Button asChild>
-              <Link href="/filaments/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Filament
-              </Link>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Brand</TableHead>
-                  <TableHead>Color</TableHead>
-                  <TableHead>Material</TableHead>
-                  <TableHead>Diameter (mm)</TableHead>
-                  <TableHead>Price</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filaments.map((filament) => (
-                  <TableRow key={filament.id}>
-                    <TableCell>{filament.name}</TableCell>
-                    <TableCell>{filament.brand}</TableCell>
-                    <TableCell>{filament.color}</TableCell>
-                    <TableCell>{filament.material.name}</TableCell>
-                    <TableCell>{filament.diameter}</TableCell>
-                    <TableCell>${filament.price.toFixed(2)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="container mx-auto py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Filaments</h1>
+        <AddFilamentModal />
+      </div>
+      <div className="grid gap-4">
+        {filamentsList.map((filament) => (
+          <Card key={filament.id}>
+            <CardHeader>
+              <CardTitle>{filament.name}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">{filament.description}</p>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-medium">Material:</span> {filament.material.name}
+                </div>
+                <div>
+                  <span className="font-medium">Diameter:</span> {filament.diameter} mm
+                </div>
+                <div>
+                  <span className="font-medium">Color:</span>
+                  <div
+                    className="inline-block w-4 h-4 rounded-full ml-2"
+                    style={{ backgroundColor: filament.color }}
+                  />
+                </div>
+                <div>
+                  <span className="font-medium">Status:</span>{' '}
+                  <span className={filament.is_active ? 'text-green-600' : 'text-red-600'}>
+                    {filament.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 } 

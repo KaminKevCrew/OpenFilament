@@ -1,75 +1,107 @@
 import axios, { AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 
-const API_URL = 'http://localhost:8000/api';
+// Use environment variable if available, otherwise fallback to localhost
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 // Types for our data models
-interface Material {
+export interface Material {
   id: number;
   name: string;
   description: string;
+  density: number;
+  softening_temp: number;
+  idle_temp: number;
+  min_temp: number;
+  max_temp: number;
+  shrinkage: number;
+  extrusion_ratio: number;
   created_at: string;
   user_id: number;
 }
 
-interface Filament {
+export interface Filament {
   id: number;
   material_id: number;
   name: string;
   description: string;
   diameter: number;
+  color: string;
+  is_active: boolean;
   created_at: string;
   user_id: number;
   material: Material;
 }
 
-interface Spool {
+export interface Spool {
   id: number;
   filament_id: number;
+  name: string;
+  description: string;
   starting_weight: number;
   starting_length: number;
   current_weight: number;
   current_length: number;
+  is_active: boolean;
   created_at: string;
   user_id: number;
   filament: Filament;
 }
 
-interface User {
+export interface User {
   id: number;
   email: string;
 }
 
-interface AuthResponse {
-  token: string;
-  user: User;
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user?: User;
 }
 
 // Create axios instance with default config
-const api = axios.create({
+export const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Add request interceptor to add auth token
+// Add request interceptor to add auth token and log requests
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = Cookies.get('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  console.log('API Request:', {
+    url: config.url,
+    method: config.method,
+    headers: config.headers,
+    data: config.data
+  });
   return config;
 });
 
-// Add response interceptor to handle errors
+// Add response interceptor to handle errors and log responses
 api.interceptors.response.use(
-  (response: AxiosResponse) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      // Clear token and redirect to login if unauthorized
+  (response: AxiosResponse) => {
+    console.log('API Response:', {
+      url: response.config.url,
+      status: response.status,
+      data: response.data
+    });
+    return response;
+  },
+  async (error: AxiosError) => {
+    console.error('API Error:', {
+      url: error.config?.url,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+    if (error.response?.status === 401 || error.response?.status === 422) {
+      // Clear token but don't redirect - let the components handle the redirect
       Cookies.remove('token');
-      window.location.href = '/auth/signin';
     }
     return Promise.reject(error);
   }
@@ -78,23 +110,55 @@ api.interceptors.response.use(
 // Auth endpoints
 export const auth = {
   login: async (email: string, password: string): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/login', { email, password });
-    const { token } = response.data;
-    Cookies.set('token', token, { expires: 7 }); // Token expires in 7 days
-    return response.data;
+    try {
+      console.log('Attempting login with:', { email });
+      const response = await api.post<AuthResponse>('/auth/login', { email, password });
+      const { access_token } = response.data;
+      // Set token with a longer expiration (30 days)
+      Cookies.set('token', access_token, { expires: 30 }); // 30 days
+      console.log('Login successful, token set, user:', response.data.user);
+      return response.data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   },
   register: async (username: string, email: string, password: string): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/signup', { username, email, password });
-    const { token } = response.data;
-    Cookies.set('token', token, { expires: 7 }); // Token expires in 7 days
-    return response.data;
+    try {
+      console.log('Attempting registration with:', { email, username });
+      const response = await api.post<AuthResponse>('/auth/signup', { username, email, password });
+      const { access_token } = response.data;
+      // Set token with a longer expiration (30 days)
+      Cookies.set('token', access_token, { expires: 30 }); // 30 days
+      console.log('Registration successful, token set, user:', response.data.user);
+      return response.data;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
   },
   logout: () => {
+    console.log('Logging out, removing token');
     Cookies.remove('token');
   },
   getCurrentUser: async (): Promise<User> => {
-    const response = await api.get<User>('/users/me');
-    return response.data;
+    try {
+      console.log('Fetching current user');
+      const response = await api.get<User>('/users/me');
+      console.log('Current user fetched:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Get current user error:', error);
+      if (error instanceof Error) {
+        throw new Error(error.message || 'Failed to get user data');
+      }
+      throw new Error('Failed to get user data');
+    }
+  },
+  getToken: (): string | undefined => {
+    const token = Cookies.get('token');
+    console.log('Getting token:', token ? 'Token exists' : 'No token');
+    return token;
   },
 };
 
